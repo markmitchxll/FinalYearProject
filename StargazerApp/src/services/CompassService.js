@@ -6,12 +6,12 @@
  *
  * Uses react-native-sensors for the magnetometer and accelerometer.
  *
- * Why we need BOTH sensors:
+ * Why I need BOTH sensors:
  * - The magnetometer gives us compass direction, but only correctly when the
  *   phone is held flat. If the phone is tilted (e.g. pointing at the sky),
  *   the raw magnetometer heading drifts badly.
  * - The accelerometer tells us how the phone is tilted (pitch and roll).
- * - By combining them with tilt compensation maths, we get an accurate
+ * - By combining them with tilt compensation maths, I get an accurate
  *   heading regardless of how the phone is angled.
  */
 
@@ -46,7 +46,7 @@ function computeHeading(mag, acc) {
   // --- Step 1: Calculate pitch and roll from the accelerometer ---
   // The accelerometer measures gravity (9.8 m/s² pulling down).
   // When the phone is tilted, gravity is split across all three axes.
-  // We use the ratio of those components to work out the tilt angles.
+  // I use the ratio of those components to work out the tilt angles.
   const accMagnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
 
   // Normalise to unit vector so we're working with angles, not raw forces.

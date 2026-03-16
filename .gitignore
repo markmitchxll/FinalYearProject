@@ -1,0 +1,44 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# React Native build outputs
+StargazerApp/android/app/build/
+StargazerApp/android/build/
+StargazerApp/android/.gradle/
+StargazerApp/android/app/.cxx/
+StargazerApp/android/local.properties
+StargazerApp/android/app/debug.keystore
+
+StargazerApp/ios/build/
+StargazerApp/ios/Pods/
+StargazerApp/ios/DerivedData/
+*.xcworkspace
+
+# Compiled native libraries and app binaries
+*.so
+*.apk
+*.aab
+*.ipa
+
+# Metro bundler cache
+StargazerApp/.metro-health-check*
+StargazerApp/.bundle/
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo

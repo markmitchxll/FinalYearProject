@@ -21,7 +21,7 @@ export default function ARCamera({ onCameraReady, children }) {
 
   // Check whether camera permission has been granted.
   // ARSkyScreen requests permission before rendering this component, so by
-  // the time we get here it should already be granted — but we check anyway
+  // the time I get here it should already be granted — but I check anyway
   // as a safety net.
   const { hasPermission } = useCameraPermission();
 

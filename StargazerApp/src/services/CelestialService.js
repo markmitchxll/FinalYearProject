@@ -58,7 +58,7 @@ function getStarAltAz(star, observer, date) {
 /**
  * Computes the altitude and azimuth of a planet for a given observer and time.
  *
- * Planets move, so we first ask astronomy-engine where the planet currently
+ * Planets move, so I first ask astronomy-engine where the planet currently
  * is in equatorial coordinates (RA/Dec), then convert that to horizontal
  * coordinates (altitude/azimuth) for our observer.
  */
@@ -113,7 +113,7 @@ export function getVisibleObjects(latitude, longitude, dateTime = new Date()) {
 
   // --- Constellations ---
   // A constellation is "visible" if at least one of its stars is above the horizon.
-  // We place the constellation label at the average position of its visible stars.
+  // I place the constellation label at the average position of its visible stars.
   const visibleStarIds = new Set(visibleStars.map(s => s.id));
 
   const visibleConstellations = constellations
@@ -211,7 +211,7 @@ export function altAzToScreenPosition(
   // Scale degrees → pixels.
   // Moving fovDegrees/2 degrees to the right = moving to the right edge of the screen.
   const x = screenWidth  / 2 + (azimuthOffset  / fovDegrees) * screenWidth;
-  // Altitude increases upward in the sky, but y increases downward on screen, so we negate.
+  // Altitude increases upward in the sky, but y increases downward on screen, so I negate.
   const y = screenHeight / 2 - (altitudeOffset / fovDegrees) * screenHeight;
 
   return { x: Math.round(x), y: Math.round(y) };
@@ -230,7 +230,7 @@ export function getVisibleObjectsTonight(latitude, longitude) {
   const now = new Date();
 
   // Find tonight's sunset. SearchRiseSet returns null if the Sun doesn't set
-  // (e.g. midnight sun in Arctic summer), so we fall back to 9 PM local time.
+  // (e.g. midnight sun in Arctic summer), so I fall back to 9 PM local time.
   let sunsetTime;
   try {
     const sunsetEvent = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, now, 1);

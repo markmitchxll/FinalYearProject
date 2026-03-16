@@ -78,12 +78,12 @@ export default function ARSkyScreen({ navigation }) {
   const [objectsInFrame, setObjectsInFrame] = useState({ stars: [], planets: [], constellations: [] });
 
   // --- UI state ---
-  const [selectedObject,    setSelectedObject]    = useState(null);  // tapped marker
+  const [selectedObject, setSelectedObject] = useState(null);
   const [discovery,         setDiscovery]         = useState(null);  // most recent new find
   const [showDiscoveryAlert, setShowDiscoveryAlert] = useState(false);
   const [showMythModal,     setShowMythModal]     = useState(false);
 
-  // We store location in a ref as well as state so the sensor callback can
+  // I store location in a ref as well as state so the sensor callback can
   // always read the latest coordinates without being re-subscribed every time
   // the location changes.
   const locationRef = useRef(null);

@@ -29,9 +29,9 @@ const WATCH_OPTIONS = {
 /**
  * Requests location permission from the operating system.
  *
- * On Android, we must explicitly ask the user at runtime.
+ * On Android, I must explicitly ask the user at runtime.
  * On iOS, the permission prompt is triggered automatically by the first
- * Geolocation call, so we just return true immediately.
+ * Geolocation call, so I just return true immediately.
  *
  * @returns {Promise<boolean>} - true if permission was granted, false if denied.
  */

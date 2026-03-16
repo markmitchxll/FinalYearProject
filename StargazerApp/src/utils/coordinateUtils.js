@@ -2,7 +2,7 @@
  * coordinateUtils.js — converts sky coordinates to screen pixel positions.
  *
  * After CelestialService gives us each object's altitude and azimuth,
- * we need to map those sky angles to x/y pixel positions on the phone screen.
+ * I need to map those sky angles to x/y pixel positions on the phone screen.
  *
  * Functions:
  *

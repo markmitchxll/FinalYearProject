@@ -37,7 +37,7 @@ const StargazerTheme = {
 
 /**
  * AppWithStore — a small inner component that can access the Redux store.
- * We need this because useDispatch() must be called inside a <Provider>.
+ * I need this because useDispatch() must be called inside a <Provider>.
  *
  * Responsibility: dispatch decayStats() when the app comes back to the
  * foreground, so hunger and happiness are recalculated based on how long
