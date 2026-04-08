@@ -39,19 +39,21 @@ export default function AppNavigator() {
         // Hide the default header bar — each screen manages its own title if needed.
         headerShown: false,
 
-        // Tab bar styling — dark space theme to match the rest of the app.
+        // Tab bar styling — pure black space theme.
         tabBarStyle: {
-          backgroundColor: '#0a0a1a',
-          borderTopColor: '#1a1a3e',
-          borderTopWidth: 1,
-          paddingBottom: 4,
-          height: 60,
+          backgroundColor: '#000000',
+          borderTopColor:  '#14143a',
+          borderTopWidth:  1,
+          paddingBottom:   6,
+          paddingTop:      4,
+          height:          62,
         },
-        tabBarActiveTintColor:   '#7777ff', // Purple/blue when selected.
-        tabBarInactiveTintColor: '#444466', // Dim when not selected.
+        tabBarActiveTintColor:   '#ffdd44', // Star gold when selected.
+        tabBarInactiveTintColor: '#2a2a4a', // Very dim when not selected.
         tabBarLabelStyle: {
-          fontSize: 11,
-          marginBottom: 4,
+          fontSize:   10,
+          marginBottom: 2,
+          letterSpacing: 0.5,
         },
 
         // Render the correct icon for each tab.

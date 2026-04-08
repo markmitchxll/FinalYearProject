@@ -27,10 +27,10 @@ const StargazerTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background:  '#0a0a1a',
-    card:        '#0a0a1a',
-    border:      '#1a1a3e',
-    primary:     '#7777ff',
+    background:  '#000000',
+    card:        '#000000',
+    border:      '#14143a',
+    primary:     '#ffdd44',
     text:        '#ffffff',
   },
 };
@@ -65,7 +65,7 @@ function AppWithStore() {
   return (
     <NavigationContainer theme={StargazerTheme}>
       {/* Keep the status bar light (white text) on the dark background. */}
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a1a" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <AppNavigator />
     </NavigationContainer>
   );

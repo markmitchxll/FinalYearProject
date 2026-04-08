@@ -19,6 +19,24 @@
  *   Quick check — returns true if the object is within the camera's field of view.
  */
 
+/**
+ * Returns the signed angular difference between two compass bearings,
+ * in the range -180 to +180.
+ * Handles the 0°/360° wraparound (e.g. gap between 5° and 355° is 10°, not 350°).
+ */
+function angularDiff(a, b) {
+  return ((a - b + 540) % 360) - 180;
+}
+
+/**
+ * Converts an object's sky position (altitude + azimuth) to screen pixel
+ * coordinates given the current device orientation and camera FOV.
+ *
+ * The screen centre corresponds to the direction the device is pointing.
+ * Angular offsets from that centre are scaled linearly to pixels.
+ *
+ * @returns {{ x: number, y: number }} — pixel position, or null if off-screen.
+ */
 export function altAzToScreenXY(
   altitude,
   azimuth,
@@ -28,15 +46,33 @@ export function altAzToScreenXY(
   screenHeight,
   fovDegrees = 60
 ) {
-  // TODO: Calculate angular offset between object and device centre.
-  //       azimuthOffset = (azimuth - deviceHeading + 360) % 360 — normalise to -180..+180
-  //       altitudeOffset = altitude - devicePitch
-  // TODO: Scale offsets to pixel positions:
-  //       x = screenWidth/2 + (azimuthOffset / fovDegrees) * screenWidth
-  //       y = screenHeight/2 - (altitudeOffset / fovDegrees) * screenHeight
-  // TODO: Return null if |azimuthOffset| or |altitudeOffset| > fovDegrees/2.
+  const halfFov = fovDegrees / 2;
+
+  // Signed angular offsets from the centre of the frame.
+  const azimuthOffset  = angularDiff(azimuth, deviceHeading);
+  const altitudeOffset = altitude - devicePitch;
+
+  // Reject anything outside the field of view.
+  if (Math.abs(azimuthOffset) > halfFov || Math.abs(altitudeOffset) > halfFov) {
+    return null;
+  }
+
+  // Scale angular offset → pixels.
+  // Azimuth increases clockwise → x increases rightward.
+  // Altitude increases upward  → y decreases (screen y is inverted).
+  const x = screenWidth  / 2 + (azimuthOffset  / fovDegrees) * screenWidth;
+  const y = screenHeight / 2 - (altitudeOffset / fovDegrees) * screenHeight;
+
+  return { x: Math.round(x), y: Math.round(y) };
 }
 
+/**
+ * Returns true if the object at (altitude, azimuth) falls within the
+ * camera's current field of view.
+ */
 export function isInFrame(altitude, azimuth, deviceHeading, devicePitch, fovDegrees = 60) {
-  // TODO: Check azimuth and altitude offsets against fovDegrees/2.
+  const halfFov = fovDegrees / 2;
+  const azimuthOffset  = Math.abs(angularDiff(azimuth, deviceHeading));
+  const altitudeOffset = Math.abs(altitude - devicePitch);
+  return azimuthOffset <= halfFov && altitudeOffset <= halfFov;
 }

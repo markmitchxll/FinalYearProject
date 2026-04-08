@@ -19,11 +19,20 @@
  *   Must be called inside a React component (uses a hook internally).
  */
 
-export async function requestCameraPermission() {
-  // TODO: Use Camera.requestCameraPermission() from react-native-vision-camera.
-}
+import { Camera } from 'react-native-vision-camera';
 
-export function getBackCamera() {
-  // TODO: Use useCameraDevice('back') hook from react-native-vision-camera.
-  // Note: this must be called within a functional component.
+/**
+ * Requests camera access from the OS permission dialog.
+ *
+ * On Android this shows the system "Allow StargazerApp to take pictures?"
+ * dialog. On iOS it shows the camera access dialog.
+ *
+ * Returns one of:
+ *   'granted'    — user approved, camera is available
+ *   'denied'     — user denied (on iOS, can only be changed in Settings)
+ *   'restricted' — parental controls / MDM block (iOS only)
+ */
+export async function requestCameraPermission() {
+  const status = await Camera.requestCameraPermission();
+  return status; // 'granted' | 'denied' | 'restricted'
 }
