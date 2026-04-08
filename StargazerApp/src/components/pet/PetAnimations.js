@@ -24,7 +24,6 @@ import {
   withTiming,
   withSpring,
   cancelAnimation,
-  Easing,
 } from 'react-native-reanimated';
 
 // ─── Idle — gentle float ──────────────────────────────────────────────────────
@@ -36,16 +35,17 @@ export function useIdleAnimation(active = true) {
     if (active) {
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-6, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-          withTiming( 6, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-6, { duration: 1200 }),
+          withTiming( 6, { duration: 1200 }),
         ),
-        -1,   // loop forever
-        false // don't reverse (the sequence handles the back-and-forth)
+        -1,
+        false
       );
     } else {
       cancelAnimation(translateY);
       translateY.value = withTiming(0, { duration: 300 });
     }
+    return () => cancelAnimation(translateY);
   }, [active]);
 
   return useAnimatedStyle(() => ({
@@ -60,19 +60,19 @@ export function useHappyAnimation(active = false) {
 
   useEffect(() => {
     if (active) {
-      // Jump up quickly, then spring back to rest, repeat 3 times.
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-20, { duration: 180, easing: Easing.out(Easing.quad) }),
-          withSpring(0,   { damping: 6, stiffness: 200 }),
+          withTiming(-20, { duration: 180 }),
+          withSpring(0, { damping: 6, stiffness: 200 }),
         ),
-        3,    // 3 bounces
+        3,
         false
       );
     } else {
       cancelAnimation(translateY);
       translateY.value = withTiming(0, { duration: 200 });
     }
+    return () => cancelAnimation(translateY);
   }, [active]);
 
   return useAnimatedStyle(() => ({
@@ -89,8 +89,8 @@ export function useHungryAnimation(active = false) {
     if (active) {
       rotate.value = withRepeat(
         withSequence(
-          withTiming(-8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-          withTiming( 8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-8, { duration: 800 }),
+          withTiming( 8, { duration: 800 }),
         ),
         -1,
         false
@@ -99,6 +99,7 @@ export function useHungryAnimation(active = false) {
       cancelAnimation(rotate);
       rotate.value = withTiming(0, { duration: 300 });
     }
+    return () => cancelAnimation(rotate);
   }, [active]);
 
   return useAnimatedStyle(() => ({
@@ -115,8 +116,8 @@ export function useSleepingAnimation(active = false) {
     if (active) {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.06, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0.96, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1.06, { duration: 2000 }),
+          withTiming(0.96, { duration: 2000 }),
         ),
         -1,
         false
@@ -125,6 +126,7 @@ export function useSleepingAnimation(active = false) {
       cancelAnimation(scale);
       scale.value = withTiming(1, { duration: 400 });
     }
+    return () => cancelAnimation(scale);
   }, [active]);
 
   return useAnimatedStyle(() => ({
@@ -141,16 +143,17 @@ export function useExcitedAnimation(active = false) {
     if (active) {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.3, { duration: 120, easing: Easing.out(Easing.quad) }),
-          withTiming(0.9, { duration: 120, easing: Easing.in(Easing.quad)  }),
+          withTiming(1.3, { duration: 120 }),
+          withTiming(0.9, { duration: 120 }),
         ),
-        6,    // 6 rapid pulses
+        6,
         false
       );
     } else {
       cancelAnimation(scale);
       scale.value = withTiming(1, { duration: 300 });
     }
+    return () => cancelAnimation(scale);
   }, [active]);
 
   return useAnimatedStyle(() => ({
