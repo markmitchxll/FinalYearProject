@@ -70,5 +70,26 @@ export const planets = [
       'Saturn is the least dense planet — it would float on water.',
     ],
   },
-  // TODO: Add Uranus and Neptune (faint but technically visible with good conditions).
+  {
+    id: 'uranus',
+    name: 'Uranus',
+    colour: '#7de8e8',
+    mythologyId: null,
+    distanceAU: 19.2,
+    funFacts: [
+      'Uranus rotates on its side — its axis is tilted 98 degrees.',
+      'Uranus was the first planet discovered with a telescope, in 1781.',
+    ],
+  },
+  {
+    id: 'neptune',
+    name: 'Neptune',
+    colour: '#5b7fde',
+    mythologyId: null,
+    distanceAU: 30.1,
+    funFacts: [
+      'Neptune has the fastest winds in the solar system, reaching 2,100 km/h.',
+      'Neptune was predicted mathematically before it was ever observed.',
+    ],
+  },
 ];
