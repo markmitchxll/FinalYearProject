@@ -29,7 +29,7 @@ const PLANET_BODY_MAP = {
 
 /**
  * Creates an astronomy-engine Observer from GPS coordinates.
- * The third argument is elevation above sea level in metres — 0 is fine for our purposes.
+ * The third argument is elevation above sea level in metres — 0 is fine for this purpose.
  */
 function createObserver(latitude, longitude) {
   return new Astronomy.Observer(latitude, longitude, 0);
@@ -44,7 +44,7 @@ function angularDifference(bearingA, bearingB) {
 }
 
 /**
- * Computes the altitude and azimuth of a fixed star (from our catalogue)
+ * Computes the altitude and azimuth of a fixed star (from the catalogue)
  * for a given observer and time.
  *
  * astronomy-engine's Horizon() function accepts the star's RA/Dec directly
@@ -58,7 +58,7 @@ function getStarAltAz(star, observer, date) {
 /**
  * Computes the altitude and azimuth of a planet for a given observer and time.
  *
- * Planets move, so I first ask astronomy-engine where the planet currently
+ * Planets move, so first ask the astronomy-engine where the planet currently
  * is in equatorial coordinates (RA/Dec), then convert that to horizontal
  * coordinates (altitude/azimuth) for our observer.
  */

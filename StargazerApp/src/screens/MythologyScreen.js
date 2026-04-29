@@ -19,6 +19,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import StarryBackground  from '../components/ui/StarryBackground';
 import MythDetailModal  from '../components/mythology/MythDetailModal';
@@ -51,8 +52,10 @@ function cultureColour(culture) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MythologyScreen() {
-  const [search, setSearch]         = useState('');
-  const [selectedMyth, setSelectedMyth] = useState(null);
+  const insets      = useSafeAreaInsets();
+  const [search, setSearch]               = useState('');
+  const [selectedMyth, setSelectedMyth]   = useState(null);
+  const [discoveredOnly, setDiscoveredOnly] = useState(false);
   const discoveries = useSelector(state => state.discoveries);
 
   const handleMythPress = useCallback((myth) => setSelectedMyth(myth), []);
@@ -79,12 +82,16 @@ export default function MythologyScreen() {
   // Filter and group mythology entries by culture.
   const allEntries = Object.values(mythology);
 
+  const baseEntries = discoveredOnly
+    ? allEntries.filter(m => unlockedIds.has(m.id))
+    : allEntries;
+
   const filtered = search.trim()
-    ? allEntries.filter(m =>
+    ? baseEntries.filter(m =>
         m.objectName.toLowerCase().includes(search.toLowerCase()) ||
         m.culture.toLowerCase().includes(search.toLowerCase())
       )
-    : allEntries;
+    : baseEntries;
 
   // Group by culture.
   const byCulture = filtered.reduce((acc, myth) => {
@@ -120,7 +127,7 @@ export default function MythologyScreen() {
           <View style={[styles.progressBarFill, { width: `${total > 0 ? (unlocked / total) * 100 : 0}%` }]} />
         </View>
 
-        {/* ── Search ── */}
+        {/* ── Search + filter toggle ── */}
         <View style={styles.searchRow}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -129,14 +136,27 @@ export default function MythologyScreen() {
             placeholderTextColor="#333355"
             value={search}
             onChangeText={setSearch}
-            clearButtonMode="while-editing"
           />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.clearButton}>✕</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.filterToggle, discoveredOnly && styles.filterToggleActive]}
+            onPress={() => setDiscoveredOnly(v => !v)}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.filterToggleText, discoveredOnly && styles.filterToggleTextActive]}>
+              Unlocked
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Myth list grouped by culture ── */}
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
           {cultures.length === 0 ? (
@@ -274,6 +294,31 @@ const styles = StyleSheet.create({
     fontSize:  14,
     padding:   0,
   },
+  clearButton: {
+    color:      '#555577',
+    fontSize:   14,
+    paddingHorizontal: 4,
+  },
+  filterToggle: {
+    marginLeft:      10,
+    borderRadius:    8,
+    borderWidth:     1,
+    borderColor:     '#333355',
+    paddingHorizontal: 10,
+    paddingVertical:  4,
+  },
+  filterToggleActive: {
+    backgroundColor: '#ffdd44',
+    borderColor:     '#ffdd44',
+  },
+  filterToggleText: {
+    color:      '#555577',
+    fontSize:   11,
+    fontWeight: '600',
+  },
+  filterToggleTextActive: {
+    color: '#000000',
+  },
 
   // ── Scroll ──
   scroll: {
@@ -281,7 +326,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom:     40,
+    paddingBottom:     90,
   },
 
   // ── Sections ──

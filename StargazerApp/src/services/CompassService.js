@@ -80,6 +80,14 @@ function computeHeading(mag, acc) {
     heading += 360;
   }
 
+  // --- Step 4: Correct for phones tilted past vertical ---
+  // When az > 0 the screen is facing partially downward, meaning the phone has
+  // tilted past the zenith. The tilt compensation above assumes the screen faces
+  // upward, so the heading is 180° wrong in this position — flip it to correct.
+  if (az > 0) {
+    heading = (heading + 180) % 360;
+  }
+
   return heading;
 }
 

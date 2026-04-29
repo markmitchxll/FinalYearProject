@@ -11,7 +11,8 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import * as Astronomy from 'astronomy-engine';
 
 // ─── Star field ───────────────────────────────────────────────────────────────
 
@@ -29,6 +30,17 @@ const STARS = Array.from({ length: 70 }, (_, i) => ({
   // Alternate between warm yellow and cool white for variety.
   color:   i % 3 === 0 ? '#ffffff' : '#ffe066',
 }));
+
+// ─── Moon phase ───────────────────────────────────────────────────────────────
+
+const PHASE_EMOJIS = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+
+function getMoonPhaseEmoji() {
+  const angle = Astronomy.MoonPhase(new Date()); // 0–360°
+  return PHASE_EMOJIS[Math.round(angle / 45) % 8];
+}
+
+const MOON_EMOJI = getMoonPhaseEmoji();
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -55,11 +67,11 @@ export default function StarryBackground({ children }) {
           />
         ))}
 
-        {/* Moon glow — a larger, faint circle to simulate light scatter */}
+        {/* Moon glow */}
         <View style={styles.moonGlow} />
 
-        {/* Moon — crisp white circle */}
-        <View style={styles.moon} />
+        {/* Moon — emoji matching the real current phase */}
+        <Text style={styles.moon}>{MOON_EMOJI}</Text>
 
       </View>
 
@@ -78,13 +90,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   moon: {
-    position:        'absolute',
-    top:             '6%',
-    right:           '8%',
-    width:           52,
-    height:          52,
-    borderRadius:    26,
-    backgroundColor: '#fffef0',
+    position: 'absolute',
+    top:      '5%',
+    right:    '6%',
+    fontSize: 48,
   },
   moonGlow: {
     position:        'absolute',

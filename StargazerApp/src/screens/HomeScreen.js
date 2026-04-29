@@ -19,9 +19,14 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import StarryBackground from '../components/ui/StarryBackground';
 import { XP_THRESHOLDS } from '../components/pet/PetEvolutionStage';
+import { stars }         from '../data/stars';
+import { planets }       from '../data/planets';
+import { constellations } from '../data/constellations';
+import { mythology }     from '../data/mythology';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,23 +49,62 @@ function getDateString() {
   });
 }
 
-// Stage display names and icons.
+// Stage display names and icons — kept in sync with PetScreen.js STAGES.
 const STAGE_INFO = {
-  1: { name: 'Nebula',   icon: '✦' },
-  2: { name: 'Stardust', icon: '★' },
-  3: { name: 'Comet',    icon: '✸' },
-  4: { name: 'Galaxy',   icon: '✺' },
+  1: { name: 'Kit',           icon: '🦊', colour: '#ff8844' },
+  2: { name: 'Star Fox',      icon: '🦊', colour: '#ffdd44' },
+  3: { name: 'Comet Fox',     icon: '🦊', colour: '#44aaff' },
+  4: { name: 'Celestial Fox', icon: '🦊', colour: '#ff88ff' },
 };
+
+// ─── Daily quest ─────────────────────────────────────────────────────────────
+
+// Build a flat list of all discoverable objects with their type.
+const ALL_OBJECTS = [
+  ...stars.map(s => ({ ...s, type: 'star' })),
+  ...planets.map(p => ({ ...p, type: 'planet' })),
+  ...constellations.map(c => ({ ...c, type: 'constellation' })),
+];
+
+const TYPE_LABEL = { star: 'Star', planet: 'Planet', constellation: 'Constellation' };
+const TYPE_COLOUR = { star: '#ffdd44', planet: '#44aaff', constellation: '#aa55ff' };
+
+/**
+ * Returns today's quest target — one undiscovered object chosen
+ * deterministically from the current date so it stays consistent all day
+ * but rotates tomorrow.
+ *
+ * Returns null if everything has been discovered.
+ */
+function getDailyQuest(discoveries) {
+  const undiscovered = ALL_OBJECTS.filter(obj => {
+    if (obj.type === 'star')          return !discoveries.stars[obj.id];
+    if (obj.type === 'planet')        return !discoveries.planets[obj.id];
+    if (obj.type === 'constellation') return !discoveries.constellations[obj.id];
+    return false;
+  });
+
+  if (undiscovered.length === 0) return null;
+
+  // Use day-of-year as a stable daily seed.
+  const now = new Date();
+  const dayOfYear = Math.floor(
+    (now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+  );
+  return undiscovered[dayOfYear % undiscovered.length];
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const insets     = useSafeAreaInsets();
   const navigation = useNavigation();
   const pet        = useSelector(state => state.pet);
   const discoveries = useSelector(state => state.discoveries);
 
   const stage     = pet.stage ?? 1;
   const stageInfo = STAGE_INFO[stage] ?? STAGE_INFO[1];
+  const stageColour = stageInfo.colour;
 
   // XP progress towards the next evolution.
   const currentThreshold = XP_THRESHOLDS[stage - 1] ?? 0;
@@ -69,6 +113,24 @@ export default function HomeScreen() {
   const xpProgress       = isMaxStage
     ? 1
     : Math.min(1, (pet.xp - currentThreshold) / (nextThreshold - currentThreshold));
+
+  // Today's quest target.
+  const questTarget   = getDailyQuest(discoveries);
+  const questComplete = questTarget
+    ? (() => {
+        if (questTarget.type === 'star')          return !!discoveries.stars[questTarget.id];
+        if (questTarget.type === 'planet')        return !!discoveries.planets[questTarget.id];
+        if (questTarget.type === 'constellation') return !!discoveries.constellations[questTarget.id];
+        return false;
+      })()
+    : true;
+
+  // Pick a hint for the quest — mythology summary, planet funFact, or distance.
+  const questHint = questTarget
+    ? (mythology[questTarget.mythologyId]?.shortSummary
+        ?? questTarget.funFacts?.[0]
+        ?? (questTarget.distanceLy ? `${questTarget.distanceLy} light years away` : ''))
+    : '';
 
   // Total objects discovered.
   const totalFound =
@@ -80,7 +142,7 @@ export default function HomeScreen() {
     <StarryBackground>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 90 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -109,7 +171,7 @@ export default function HomeScreen() {
           <Text style={styles.cardLabel}>YOUR COMPANION</Text>
 
           <View style={styles.petRow}>
-            <View style={styles.petIconCircle}>
+            <View style={[styles.petIconCircle, { borderColor: stageColour }]}>
               <Text style={styles.petIcon}>{stageInfo.icon}</Text>
             </View>
             <View style={styles.petInfo}>
@@ -130,9 +192,9 @@ export default function HomeScreen() {
           {/* Hunger + happiness bars */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Hunger</Text>
+              <Text style={styles.statLabel}>Curiosity</Text>
               <View style={styles.barTrack}>
-                <View style={[styles.barFill, styles.hungerBar, { width: `${pet.hunger ?? 100}%` }]} />
+                <View style={[styles.barFill, styles.curiosityBar, { width: `${pet.curiosity ?? 40}%` }]} />
               </View>
             </View>
             <View style={styles.statItem}>
@@ -142,6 +204,53 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* ── Daily quest card ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>TONIGHT'S QUEST</Text>
+
+          {questTarget === null ? (
+            <View style={styles.questRow}>
+              <Text style={styles.questFox}>🦊</Text>
+              <Text style={styles.questComplete}>
+                Kit is amazed — you've discovered everything! You're a true stargazer.
+              </Text>
+            </View>
+          ) : questComplete ? (
+            <View style={styles.questRow}>
+              <Text style={styles.questFox}>🦊</Text>
+              <View style={styles.questInfo}>
+                <Text style={styles.questCompleteText}>✓  You found it! Kit is thrilled!</Text>
+                <Text style={styles.questName}>{questTarget.name}</Text>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.questRow}>
+                <Text style={styles.questFox}>🦊</Text>
+                <View style={styles.questInfo}>
+                  <Text style={styles.questPrompt}>Tonight, Kit wants to find…</Text>
+                  <View style={styles.questNameRow}>
+                    <Text style={styles.questName}>{questTarget.name}</Text>
+                    <View style={[styles.questBadge, { backgroundColor: TYPE_COLOUR[questTarget.type] }]}>
+                      <Text style={styles.questBadgeText}>{TYPE_LABEL[questTarget.type]}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+              {questHint ? (
+                <Text style={styles.questHint} numberOfLines={2}>{questHint}</Text>
+              ) : null}
+              <TouchableOpacity
+                style={styles.questButton}
+                onPress={() => navigation.navigate('Sky')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.questButtonText}>🔭  Find it in the Sky view</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* ── Discoveries summary card ── */}
@@ -195,7 +304,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
 
   // ── Header ──
@@ -281,8 +390,7 @@ const styles = StyleSheet.create({
     marginRight:     14,
   },
   petIcon: {
-    color:    '#ffdd44',
-    fontSize: 24,
+    fontSize: 28,
   },
   petInfo: {
     flex: 1,
@@ -326,11 +434,83 @@ const styles = StyleSheet.create({
   xpBar: {
     backgroundColor: '#ffdd44',
   },
-  hungerBar: {
-    backgroundColor: '#ff7744',
+  curiosityBar: {
+    backgroundColor: '#aa66ff',
   },
   happyBar: {
     backgroundColor: '#66ff88',
+  },
+
+  // ── Daily quest ──
+  questRow: {
+    flexDirection: 'row',
+    alignItems:    'flex-start',
+    marginBottom:  10,
+    gap:           10,
+  },
+  questFox: {
+    fontSize: 28,
+  },
+  questInfo: {
+    flex: 1,
+  },
+  questPrompt: {
+    color:     '#8888aa',
+    fontSize:  12,
+    marginBottom: 4,
+  },
+  questNameRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           8,
+    flexWrap:      'wrap',
+  },
+  questName: {
+    color:      '#ffffff',
+    fontSize:   18,
+    fontWeight: 'bold',
+  },
+  questBadge: {
+    borderRadius:      6,
+    paddingHorizontal: 7,
+    paddingVertical:   2,
+  },
+  questBadgeText: {
+    color:      '#000000',
+    fontSize:   9,
+    fontWeight: 'bold',
+  },
+  questHint: {
+    color:      '#9999bb',
+    fontSize:   12,
+    fontStyle:  'italic',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  questButton: {
+    backgroundColor: '#0d0d28',
+    borderRadius:    10,
+    borderWidth:     1,
+    borderColor:     '#333366',
+    paddingVertical:  10,
+    alignItems:      'center',
+  },
+  questButtonText: {
+    color:      '#aaaaff',
+    fontSize:   13,
+    fontWeight: '600',
+  },
+  questComplete: {
+    color:      '#66ff88',
+    fontSize:   13,
+    lineHeight: 19,
+    flex:       1,
+  },
+  questCompleteText: {
+    color:      '#66ff88',
+    fontSize:   13,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
 
   // ── Discoveries summary ──

@@ -126,6 +126,13 @@ export default function DiscoveryAlert({ discovery, visible, onDismiss }) {
           </Text>
         ) : null}
 
+        {/* ── Pet comment ── */}
+        {discovery.petComment ? (
+          <View style={styles.petComment}>
+            <Text style={styles.petCommentText}>🦊  {discovery.petComment}</Text>
+          </View>
+        ) : null}
+
         {/* ── Dismiss hint ── */}
         <Text style={styles.hint}>Tap to dismiss</Text>
 
@@ -219,6 +226,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 17,
     marginBottom: 8,
+  },
+
+  // ── Pet comment ──
+  petComment: {
+    backgroundColor: '#0a0a22',
+    borderRadius:    8,
+    borderWidth:     1,
+    borderColor:     '#222244',
+    paddingHorizontal: 10,
+    paddingVertical:   7,
+    marginBottom:    10,
+  },
+  petCommentText: {
+    color:      '#ccccff',
+    fontSize:   12,
+    lineHeight: 17,
+    fontStyle:  'italic',
   },
 
   // ── Dismiss hint ──

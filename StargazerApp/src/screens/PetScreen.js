@@ -14,11 +14,12 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 
 import StarryBackground from '../components/ui/StarryBackground';
 import TamagotchiPet   from '../components/pet/TamagotchiPet';
-import { feedPet, petThePet } from '../store/petSlice';
+import { encouragePet, petThePet } from '../store/petSlice';
 import { XP_THRESHOLDS } from '../components/pet/PetEvolutionStage';
 
 // ─── Stage definitions ────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ const STAGES = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PetScreen() {
+  const insets      = useSafeAreaInsets();
   const dispatch    = useDispatch();
   const pet         = useSelector(state => state.pet);
   const discoveries = useSelector(state => state.discoveries);
@@ -62,8 +64,8 @@ export default function PetScreen() {
 
   // Derive the pet's current mood from its stats.
   const mood =
-    (pet.hunger    ?? 100) < 30 ? 'hungry'  :
-    (pet.happiness ?? 100) > 70 ? 'happy'   :
+    (pet.curiosity ?? 40) < 25  ? 'hungry'  :
+    (pet.happiness ?? 50) > 70  ? 'happy'   :
     'idle';
 
   const handlePetTap = () => dispatch(petThePet());
@@ -85,7 +87,7 @@ export default function PetScreen() {
     <StarryBackground>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 90 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -123,10 +125,10 @@ export default function PetScreen() {
           <Text style={styles.cardLabel}>STATS</Text>
 
           <StatBar
-            label="Hunger"
-            value={pet.hunger ?? 100}
-            fillColour="#ff7744"
-            lowWarning="Your companion is hungry — discover more stars!"
+            label="Curiosity"
+            value={pet.curiosity ?? 40}
+            fillColour="#aa66ff"
+            lowWarning="Your companion wants to explore — head outside and find something new!"
           />
           <StatBar
             label="Happiness"
@@ -140,11 +142,11 @@ export default function PetScreen() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[styles.actionButton, styles.feedButton]}
-            onPress={() => dispatch(feedPet())}
+            onPress={() => dispatch(encouragePet())}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonIcon}>🍖</Text>
-            <Text style={styles.buttonLabel}>Feed</Text>
+            <Text style={styles.buttonIcon}>🔭</Text>
+            <Text style={styles.buttonLabel}>Encourage</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -220,7 +222,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop:        60,
-    paddingBottom:     40,
+    paddingBottom:     90,
   },
 
   // ── Title ──
@@ -366,9 +368,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   feedButton: {
-    backgroundColor: '#1a0a00',
+    backgroundColor: '#0d0a1a',
     borderWidth:     1,
-    borderColor:     '#ff7744',
+    borderColor:     '#aa66ff',
   },
   petButton: {
     backgroundColor: '#0a0a1a',

@@ -22,8 +22,8 @@ import {
   withRepeat,
   withSequence,
   withTiming,
-  withSpring,
   cancelAnimation,
+  Easing,
 } from 'react-native-reanimated';
 
 // ─── Idle — gentle float ──────────────────────────────────────────────────────
@@ -35,15 +35,15 @@ export function useIdleAnimation(active = true) {
     if (active) {
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-6, { duration: 1200 }),
-          withTiming( 6, { duration: 1200 }),
+          withTiming(-6, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+          withTiming( 6, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
         ),
         -1,
         false
       );
     } else {
       cancelAnimation(translateY);
-      translateY.value = withTiming(0, { duration: 300 });
+      translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) });
     }
     return () => cancelAnimation(translateY);
   }, [active]);
@@ -62,15 +62,15 @@ export function useHappyAnimation(active = false) {
     if (active) {
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-20, { duration: 180 }),
-          withSpring(0, { damping: 6, stiffness: 200 }),
+          withTiming(-22, { duration: 200, easing: Easing.out(Easing.cubic) }),
+          withTiming(0,   { duration: 350, easing: Easing.out(Easing.elastic(1.5)) }),
         ),
         3,
         false
       );
     } else {
       cancelAnimation(translateY);
-      translateY.value = withTiming(0, { duration: 200 });
+      translateY.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.ease) });
     }
     return () => cancelAnimation(translateY);
   }, [active]);
@@ -89,15 +89,15 @@ export function useHungryAnimation(active = false) {
     if (active) {
       rotate.value = withRepeat(
         withSequence(
-          withTiming(-8, { duration: 800 }),
-          withTiming( 8, { duration: 800 }),
+          withTiming(-8, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+          withTiming( 8, { duration: 900, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
         false
       );
     } else {
       cancelAnimation(rotate);
-      rotate.value = withTiming(0, { duration: 300 });
+      rotate.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) });
     }
     return () => cancelAnimation(rotate);
   }, [active]);
@@ -116,15 +116,15 @@ export function useSleepingAnimation(active = false) {
     if (active) {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.06, { duration: 2000 }),
-          withTiming(0.96, { duration: 2000 }),
+          withTiming(1.06, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.96, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
         ),
         -1,
         false
       );
     } else {
       cancelAnimation(scale);
-      scale.value = withTiming(1, { duration: 400 });
+      scale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
     }
     return () => cancelAnimation(scale);
   }, [active]);
@@ -143,15 +143,15 @@ export function useExcitedAnimation(active = false) {
     if (active) {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.3, { duration: 120 }),
-          withTiming(0.9, { duration: 120 }),
+          withTiming(1.3, { duration: 130, easing: Easing.out(Easing.cubic) }),
+          withTiming(0.9, { duration: 130, easing: Easing.in(Easing.cubic) }),
         ),
         6,
         false
       );
     } else {
       cancelAnimation(scale);
-      scale.value = withTiming(1, { duration: 300 });
+      scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
     }
     return () => cancelAnimation(scale);
   }, [active]);

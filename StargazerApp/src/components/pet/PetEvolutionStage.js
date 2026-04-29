@@ -2,10 +2,10 @@
  * PetEvolutionStage — maps XP values to evolution stages and milestone thresholds.
  *
  * Evolution stages:
- *  Stage 1 (Egg/Nebula)    : 0 – 99 XP      — just hatched, curious about the sky
- *  Stage 2 (Stardust)      : 100 – 499 XP   — starting to recognise constellations
- *  Stage 3 (Comet)         : 500 – 1999 XP  — seasoned night-sky explorer
- *  Stage 4 (Galaxy)        : 2000+ XP       — fully evolved cosmic being
+ *  Stage 1 (Kit)           : 0 – 99 XP      — tiny fox kit, just opening its eyes to the sky
+ *  Stage 2 (Star Fox)      : 100 – 499 XP   — young fox with star-dusted fur
+ *  Stage 3 (Comet Fox)     : 500 – 1999 XP  — sleek fox with a blazing comet tail
+ *  Stage 4 (Celestial Fox) : 2000+ XP       — nine-tailed kitsune, fully evolved
  *
  * XP awards (defined here as constants, used by discoveriesSlice):
  *  - New star discovered          : +10 XP

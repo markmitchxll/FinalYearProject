@@ -18,6 +18,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import StarryBackground  from '../components/ui/StarryBackground';
 import { stars }         from '../data/stars';
@@ -54,6 +55,7 @@ const TABS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function DiscoveriesScreen() {
+  const insets      = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('stars');
   const discoveries = useSelector(state => state.discoveries);
 
@@ -142,7 +144,7 @@ export default function DiscoveriesScreen() {
           <FlatList
             data={items}
             keyExtractor={item => item.id}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[styles.list, { paddingBottom: 90 + insets.bottom }]}
             renderItem={({ item }) => (
               <View style={styles.itemCard}>
                 <View style={[styles.itemIconCircle, { borderColor: item.colour }]}>
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 20,
     paddingTop:        8,
-    paddingBottom:     40,
+    paddingBottom:     90,
   },
   itemCard: {
     flexDirection:   'row',

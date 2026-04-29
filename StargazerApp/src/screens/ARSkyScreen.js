@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, PanResponder, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 // Services
@@ -52,6 +52,25 @@ import { mythology } from '../data/mythology';
 // 60° is a reasonable default for most phones.
 const FOV_DEGREES = 60;
 
+// Preset cities available in virtual sky mode.
+const CITIES = [
+  { name: 'My Location',    flag: '📍', latitude: null,    longitude: null    },
+  { name: 'London',         flag: '🇬🇧', latitude: 51.51,  longitude: -0.13   },
+  { name: 'New York',       flag: '🇺🇸', latitude: 40.71,  longitude: -74.01  },
+  { name: 'Tokyo',          flag: '🇯🇵', latitude: 35.68,  longitude: 139.69  },
+  { name: 'Sydney',         flag: '🇦🇺', latitude: -33.87, longitude: 151.21  },
+  { name: 'Dubai',          flag: '🇦🇪', latitude: 25.20,  longitude: 55.27   },
+  { name: 'Paris',          flag: '🇫🇷', latitude: 48.86,  longitude: 2.35    },
+  { name: 'Los Angeles',    flag: '🇺🇸', latitude: 34.05,  longitude: -118.24 },
+  { name: 'São Paulo',      flag: '🇧🇷', latitude: -23.55, longitude: -46.63  },
+  { name: 'Cairo',          flag: '🇪🇬', latitude: 30.04,  longitude: 31.24   },
+  { name: 'Cape Town',      flag: '🇿🇦', latitude: -33.92, longitude: 18.42   },
+  { name: 'Mumbai',         flag: '🇮🇳', latitude: 19.08,  longitude: 72.88   },
+  { name: 'Singapore',      flag: '🇸🇬', latitude: 1.35,   longitude: 103.82  },
+  { name: 'Reykjavik',      flag: '🇮🇸', latitude: 64.13,  longitude: -21.94  },
+  { name: 'Anchorage',      flag: '🇺🇸', latitude: 61.22,  longitude: -149.90 },
+];
+
 // Maps the object's type string to the correct key in the discoveries Redux state.
 const DISCOVERY_STATE_KEY = {
   star:          'stars',
@@ -71,6 +90,13 @@ export default function ARSkyScreen({ navigation }) {
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [permissionError,    setPermissionError]    = useState(null);
 
+  // --- Mode toggle ---
+  const [virtualMode, setVirtualMode] = useState(false);
+
+  // --- Virtual sky location (null = use real GPS) ---
+  const [virtualLocation,    setVirtualLocation]    = useState(CITIES[0]);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
   // --- Live sensor data ---
   const [orientation, setOrientation] = useState({ heading: 0, pitch: 45, roll: 0 });
 
@@ -87,6 +113,21 @@ export default function ARSkyScreen({ navigation }) {
   // always read the latest coordinates without being re-subscribed every time
   // the location changes.
   const locationRef = useRef(null);
+
+  // Low-pass filter for sensor smoothing.
+  // Each new reading is blended with the previous smoothed value to reduce jitter.
+  // 0.15 = smooth (less responsive); 0.3 = more responsive (more jitter).
+  const SMOOTHING = 0.15;
+  const smoothedOrientation = useRef({ heading: 0, pitch: 45, roll: 0 });
+
+  // Blends two compass angles correctly, handling the 0°/360° wraparound.
+  // e.g. smoothing from 359° towards 1° gives 360° (not 180°).
+  function smoothAngle(current, target) {
+    let diff = target - current;
+    if (diff > 180)  diff -= 360;
+    if (diff < -180) diff += 360;
+    return (current + SMOOTHING * diff + 360) % 360;
+  }
 
   // ─── Step 1: Request permissions and get initial GPS fix ─────────────────────
   useEffect(() => {
@@ -127,26 +168,33 @@ export default function ARSkyScreen({ navigation }) {
     return stopWatching;
   }, [permissionsGranted]);
 
-  // ─── Step 3: Subscribe to compass + tilt sensors ─────────────────────────────
+  // ─── Step 3: Subscribe to compass + tilt sensors (AR mode only) ─────────────
   // Every time the phone moves, recompute which objects are in frame and
-  // update the overlay positions.
+  // update the overlay positions. Sensors are stopped in virtual mode.
   useEffect(() => {
-    if (!permissionsGranted) return;
+    if (!permissionsGranted || virtualMode) return;
 
     const stopSensors = startSensors(
       newOrientation => {
-        setOrientation(newOrientation);
+        // Apply low-pass filter to reduce sensor noise jitter.
+        smoothedOrientation.current = {
+          heading: smoothAngle(smoothedOrientation.current.heading, newOrientation.heading),
+          pitch:   smoothedOrientation.current.pitch + SMOOTHING * (newOrientation.pitch - smoothedOrientation.current.pitch),
+          roll:    smoothedOrientation.current.roll  + SMOOTHING * (newOrientation.roll  - smoothedOrientation.current.roll),
+        };
+
+        const smoothed = smoothedOrientation.current;
+        setOrientation(smoothed);
 
         if (!locationRef.current) return;
 
         const { latitude, longitude } = locationRef.current;
-        const { heading, pitch }      = newOrientation;
 
         const inFrame = getObjectsInDirection(
           latitude,
           longitude,
-          heading,
-          pitch,
+          smoothed.heading,
+          smoothed.pitch,
           FOV_DEGREES,
         );
 
@@ -156,7 +204,51 @@ export default function ARSkyScreen({ navigation }) {
     );
 
     return stopSensors;
-  }, [permissionsGranted]);
+  }, [permissionsGranted, virtualMode]);
+
+  // ─── Step 4: Recompute visible objects when orientation/location changes in virtual mode
+  useEffect(() => {
+    if (!virtualMode) return;
+
+    // Use the selected city coords, or fall back to real GPS if "My Location" is chosen.
+    const lat = virtualLocation.latitude  ?? locationRef.current?.latitude;
+    const lon = virtualLocation.longitude ?? locationRef.current?.longitude;
+    if (lat == null || lon == null) return;
+
+    const { heading, pitch } = orientation;
+
+    const inFrame = getObjectsInDirection(lat, lon, heading, pitch, FOV_DEGREES);
+    setObjectsInFrame(inFrame);
+  }, [virtualMode, orientation, virtualLocation]);
+
+  // ─── PanResponder for virtual mode drag-to-look ───────────────────────────────
+  const lastDragPos = useRef({ x: 0, y: 0 });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Don't claim the touch immediately — let child components (buttons,
+      // markers) receive taps first.
+      onStartShouldSetPanResponder: () => false,
+      // Only claim the gesture once the finger has moved more than 8px,
+      // confirming it is a drag rather than a tap.
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 8 || Math.abs(gesture.dy) > 8,
+      onPanResponderGrant: (_, gesture) => {
+        lastDragPos.current = { x: gesture.x0, y: gesture.y0 };
+      },
+      onPanResponderMove: (_, gesture) => {
+        const dx = gesture.moveX - lastDragPos.current.x;
+        const dy = gesture.moveY - lastDragPos.current.y;
+        lastDragPos.current = { x: gesture.moveX, y: gesture.moveY };
+
+        setOrientation(prev => ({
+          heading: (prev.heading + dx * 0.3 + 360) % 360,
+          pitch:   Math.max(-90, Math.min(90, prev.pitch - dy * 0.3)),
+          roll:    0,
+        }));
+      },
+    })
+  ).current;
 
   // ─── Handle tapping a marker ─────────────────────────────────────────────────
   const handleObjectPress = useCallback(obj => {
@@ -181,11 +273,25 @@ export default function ARSkyScreen({ navigation }) {
 
     // Show the discovery pop-up.
     const myth = mythology[obj.mythologyId];
+
+    // Pick a curious fact for the pet to say.
+    // Planets carry funFacts directly; stars/constellations use mythology funFacts;
+    // stars without myths fall back to their distance.
+    let petComment = '';
+    if (obj.funFacts?.length) {
+      petComment = obj.funFacts[0];
+    } else if (myth?.funFacts?.length) {
+      petComment = myth.funFacts[0];
+    } else if (obj.distanceLy) {
+      petComment = `${obj.name} is ${obj.distanceLy} light years away from Earth!`;
+    }
+
     setDiscovery({
       name:       obj.name,
       type:       obj.type,
       xpAwarded,
       mythTeaser: myth?.shortSummary ?? '',
+      petComment,
     });
     setShowDiscoveryAlert(true);
   }, [dispatch, discoveries, isFirstTonight]);
@@ -205,9 +311,10 @@ export default function ARSkyScreen({ navigation }) {
 
   // Pre-compute screen positions for all visible stars so ConstellationLines
   // can look them up by ID without doing extra calculations.
-  const starScreenPositions = {};
+  // ConstellationLines expects a Map (uses .get / .size / .values).
+  const starScreenPositions = new Map();
   for (const star of objectsInFrame.stars) {
-    starScreenPositions[star.id] = toScreenPos(star);
+    starScreenPositions.set(star.id, toScreenPos(star));
   }
 
   // ─── Render: error / loading states ──────────────────────────────────────────
@@ -227,55 +334,92 @@ export default function ARSkyScreen({ navigation }) {
     );
   }
 
+  // ─── Shared overlay content (markers + compass) ──────────────────────────────
+  const overlayContent = (
+    <>
+      {/* Constellation stick-figure lines — drawn first so they sit behind markers */}
+      {objectsInFrame.constellations.map(con => (
+        <ConstellationLines
+          key={con.id}
+          constellation={con}
+          starScreenPositions={starScreenPositions}
+          onPress={handleObjectPress}
+        />
+      ))}
+
+      {/* Star markers */}
+      {objectsInFrame.stars.map(star => {
+        const { x, y } = toScreenPos(star);
+        return (
+          <StarMarker
+            key={star.id}
+            star={star}
+            screenX={x}
+            screenY={y}
+            onPress={handleObjectPress}
+          />
+        );
+      })}
+
+      {/* Planet markers */}
+      {objectsInFrame.planets.map(planet => {
+        const { x, y } = toScreenPos(planet);
+        return (
+          <PlanetMarker
+            key={planet.id}
+            planet={planet}
+            screenX={x}
+            screenY={y}
+            onPress={handleObjectPress}
+          />
+        );
+      })}
+
+      {/* Cardinal direction labels (N, NE, E, …) along the horizon line */}
+      <CompassOverlay heading={orientation.heading} />
+    </>
+  );
+
   // ─── Render: main AR view ─────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
 
-      {/* Live camera feed — all overlays are rendered as children on top of it */}
-      <ARCamera>
+      {/* Mode toggle button — top-right corner */}
+      <TouchableOpacity
+        style={styles.modeToggle}
+        onPress={() => setVirtualMode(v => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.modeToggleText}>
+          {virtualMode ? '📷  AR Mode' : '🌌  Virtual'}
+        </Text>
+      </TouchableOpacity>
 
-        {/* Constellation stick-figure lines — drawn first so they sit behind markers */}
-        {objectsInFrame.constellations.map(con => (
-          <ConstellationLines
-            key={con.id}
-            constellation={con}
-            starScreenPositions={starScreenPositions}
-            onPress={handleObjectPress}
-          />
-        ))}
+      {virtualMode ? (
+        /* ── Virtual sky: dark background + drag to look ── */
+        <View style={styles.virtualSky} {...panResponder.panHandlers}>
+          {overlayContent}
 
-        {/* Star markers */}
-        {objectsInFrame.stars.map(star => {
-          const { x, y } = toScreenPos(star);
-          return (
-            <StarMarker
-              key={star.id}
-              star={star}
-              screenX={x}
-              screenY={y}
-              onPress={handleObjectPress}
-            />
-          );
-        })}
+          {/* Location picker button — bottom-centre */}
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={() => setShowLocationPicker(true)}
+          >
+            <Text style={styles.locationButtonText}>
+              {virtualLocation.flag}  {virtualLocation.name}  ▾
+            </Text>
+          </TouchableOpacity>
 
-        {/* Planet markers */}
-        {objectsInFrame.planets.map(planet => {
-          const { x, y } = toScreenPos(planet);
-          return (
-            <PlanetMarker
-              key={planet.id}
-              planet={planet}
-              screenX={x}
-              screenY={y}
-              onPress={handleObjectPress}
-            />
-          );
-        })}
-
-        {/* Cardinal direction labels (N, NE, E, …) along the horizon line */}
-        <CompassOverlay heading={orientation.heading} />
-
-      </ARCamera>
+          <Text style={styles.dragHint} pointerEvents="none">
+            Drag to explore the sky
+          </Text>
+        </View>
+      ) : (
+        /* ── AR mode: live camera feed ── */
+        <ARCamera>
+          {overlayContent}
+        </ARCamera>
+      )}
 
       {/* Discovery alert — slides in from the top when the user finds something new */}
       <DiscoveryAlert
@@ -302,6 +446,44 @@ export default function ARSkyScreen({ navigation }) {
         }}
       />
 
+      {/* Location picker modal */}
+      <Modal
+        visible={showLocationPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowLocationPicker(false)}
+        />
+        <View style={styles.pickerSheet}>
+          <Text style={styles.pickerTitle}>View sky from…</Text>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {CITIES.map(city => {
+              const isSelected = city.name === virtualLocation.name;
+              return (
+                <TouchableOpacity
+                  key={city.name}
+                  style={[styles.cityRow, isSelected && styles.cityRowSelected]}
+                  onPress={() => {
+                    setVirtualLocation(city);
+                    setShowLocationPicker(false);
+                  }}
+                >
+                  <Text style={styles.cityFlag}>{city.flag}</Text>
+                  <Text style={[styles.cityName, isSelected && styles.cityNameSelected]}>
+                    {city.name}
+                  </Text>
+                  {isSelected && <Text style={styles.cityTick}>✓</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -311,6 +493,109 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+
+  // ── Mode toggle button ──
+  modeToggle: {
+    position:        'absolute',
+    top:             52,
+    right:           16,
+    zIndex:          100,
+    backgroundColor: 'rgba(10, 10, 30, 0.85)',
+    borderRadius:    20,
+    borderWidth:     1,
+    borderColor:     '#333366',
+    paddingVertical:  8,
+    paddingHorizontal: 14,
+  },
+  modeToggleText: {
+    color:      '#ccccff',
+    fontSize:   13,
+    fontWeight: 'bold',
+  },
+
+  // ── Virtual sky background ──
+  virtualSky: {
+    flex:            1,
+    backgroundColor: '#00000f',
+  },
+  dragHint: {
+    position:  'absolute',
+    bottom:    76,
+    alignSelf: 'center',
+    color:     '#333355',
+    fontSize:  12,
+  },
+
+  // ── Location picker button ──
+  locationButton: {
+    position:        'absolute',
+    bottom:          100,
+    alignSelf:       'center',
+    backgroundColor: 'rgba(10, 10, 30, 0.85)',
+    borderRadius:    20,
+    borderWidth:     1,
+    borderColor:     '#333366',
+    paddingVertical:  8,
+    paddingHorizontal: 18,
+  },
+  locationButtonText: {
+    color:    '#ccccff',
+    fontSize: 14,
+  },
+
+  // ── Location picker modal sheet ──
+  pickerBackdrop: {
+    flex:            1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  pickerSheet: {
+    backgroundColor: '#0d0d2b',
+    borderTopLeftRadius:  20,
+    borderTopRightRadius: 20,
+    borderTopWidth:  1,
+    borderColor:     '#222255',
+    paddingTop:      20,
+    paddingBottom:   40,
+    maxHeight:       '60%',
+  },
+  pickerTitle: {
+    color:        '#8888cc',
+    fontSize:     13,
+    fontWeight:   'bold',
+    letterSpacing: 1,
+    textAlign:    'center',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
+  cityRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    paddingVertical:  14,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#111133',
+  },
+  cityRowSelected: {
+    backgroundColor: '#111133',
+  },
+  cityFlag: {
+    fontSize:    22,
+    marginRight: 14,
+  },
+  cityName: {
+    flex:     1,
+    color:    '#aaaacc',
+    fontSize: 16,
+  },
+  cityNameSelected: {
+    color:      '#ffdd44',
+    fontWeight: 'bold',
+  },
+  cityTick: {
+    color:    '#ffdd44',
+    fontSize: 18,
+  },
+
   centredContainer: {
     flex: 1,
     backgroundColor: '#0a0a1a',

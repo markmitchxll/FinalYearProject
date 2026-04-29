@@ -17,6 +17,7 @@ import { Provider, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store, persistor } from './src/store/index';
 import AppNavigator from './src/navigation/AppNavigator';
 import { decayStats } from './src/store/petSlice';
@@ -76,13 +77,15 @@ export default function App() {
     // GestureHandlerRootView is required by react-native-gesture-handler,
     // which is used internally by React Navigation's stack and tab navigators.
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Provider store={store}>
-        {/* loading={null} means show nothing while state is being restored.
-            You could replace null with a splash/loading screen component. */}
-        <PersistGate loading={null} persistor={persistor}>
-          <AppWithStore />
-        </PersistGate>
-      </Provider>
+      <SafeAreaProvider>
+        <Provider store={store}>
+          {/* loading={null} means show nothing while state is being restored.
+              You could replace null with a splash/loading screen component. */}
+          <PersistGate loading={null} persistor={persistor}>
+            <AppWithStore />
+          </PersistGate>
+        </Provider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

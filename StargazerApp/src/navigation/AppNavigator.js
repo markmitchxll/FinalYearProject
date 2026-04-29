@@ -44,9 +44,7 @@ export default function AppNavigator() {
           backgroundColor: '#000000',
           borderTopColor:  '#14143a',
           borderTopWidth:  1,
-          paddingBottom:   6,
           paddingTop:      4,
-          height:          62,
         },
         tabBarActiveTintColor:   '#ffdd44', // Star gold when selected.
         tabBarInactiveTintColor: '#2a2a4a', // Very dim when not selected.

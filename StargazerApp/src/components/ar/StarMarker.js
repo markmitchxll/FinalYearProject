@@ -28,7 +28,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
  *   Polaris:   1.97  → medium dot   (~10px)
  *   Faint:     5.0   → smallest dot (~5px)
  *
- * We clamp between 5 and 16px so even faint stars are tappable.
+ * Clamp between 5 and 16px so even faint stars are tappable.
  */
 function magnitudeToDotSize(magnitude) {
   // Linear mapping: mag -2 → 16px, mag 6 → 5px.
